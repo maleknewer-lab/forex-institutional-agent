@@ -1,0 +1,68 @@
+[
+    {
+        "timestamp": "2026-10-25T23:37:18.331372",
+        "pair": "XAU/USD",
+        "decision": "بيع (Sell)",
+        "entry_price": 4010.0,
+        "target_price": 3980.0,
+        "stop_loss": 4025.0,
+        "reasoning": "ارتداد من منطقة عرض مؤسسية 4H مع رصد فوليوم عالي.",
+        "status": "قيد التتبع (Pending)",
+        "outcome": null
+    },
+    {
+        "timestamp": "2026-10-25T23:50:42.276486",
+        "pair": "EUR/USD",
+        "decision": "بيع (Sell)",
+        "entry_price": 1.12,
+        "target_price": 1.1088,
+        "stop_loss": 1.1312000000000002,
+        "reasoning": "تحليل آلي مؤسسي بناءً على هيكل 4h ومناطق العرض لـ EUR/USD",
+        "status": "قيد التتبع (Pending)",
+        "outcome": null
+    },
+    {
+        "timestamp": "2026-10-25T23:50:43.562909",
+        "pair": "GBP/USD",
+        "decision": "بيع (Sell)",
+        "entry_price": 1.34,
+        "target_price": 1.3266,
+        "stop_loss": 1.3534000000000002,
+        "reasoning": "تحليل آلي مؤسسي بناءً على هيكل 4h ومناطق العرض لـ GBP/USD",
+        "status": "قيد التتبع (Pending)",
+        "outcome": null
+    },
+    {
+        "timestamp": "2026-10-25T23:50:44.876833",
+        "pair": "USD/JPY",
+        "decision": "بيع (Sell)",
+        "entry_price": 156.81,
+        "target_price": 155.2419,
+        "stop_loss": 158.37810000000002,
+        "reasoning": "تحليل آلي مؤسسي بناءً على هيكل 4h ومناطق العرض لـ USD/JPY",
+        "status": "قيد التتبع (Pending)",
+        "outcome": null
+    },
+    {
+        "timestamp": "2026-10-25T23:50:46.088795",
+        "pair": "XAU/USD",
+        "decision": "بيع (Sell)",
+        "entry_price": 4014.5,
+        "target_price": 3974.355,
+        "stop_loss": 4054.645,
+        "reasoning": "تحليل آلي مؤسسي بناءً على هيكل 4h ومناطق العرض لـ XAU/USD",
+        "status": "قيد التتبع (Pending)",
+        "outcome": null
+    },
+    {
+        "timestamp": "2026-10-25T23:50:47.319509",
+        "pair": "XAG/USD",
+        "decision": "بيع (Sell)",
+        "entry_price": 54.05,
+        "target_price": 53.509499999999996,
+        "stop_loss": 54.5905,
+        "reasoning": "تحليل آلي مؤسسي بناءً على هيكل 4h ومناطق العرض لـ XAG/USD",
+        "status": "قيد التتبع (Pending)",
+        "outcome": null
+    }
+]

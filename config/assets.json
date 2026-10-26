@@ -1,0 +1,30 @@
+{
+    "forex_majors": [
+        "EUR/USD",
+        "GBP/USD",
+        "USD/JPY",
+        "AUD/USD",
+        "USD/CAD",
+        "NZD/USD",
+        "USD/CHF"
+    ],
+    "forex_crosses": [
+        "EUR/GBP",
+        "EUR/JPY",
+        "GBP/JPY",
+        "AUD/JPY",
+        "EUR/AUD",
+        "GBP/AUD",
+        "EUR/CHF",
+        "CHF/JPY"
+    ],
+    "precious_metals": [
+        "XAU/USD",
+        "XAG/USD"
+    ],
+    "timeframes": [
+        "1h",
+        "4h",
+        "1d"
+    ]
+}

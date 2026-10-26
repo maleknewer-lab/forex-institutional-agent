@@ -1,0 +1,103 @@
+[
+    {
+        "scenario_id": "HIST_2021_EURUSD_RATE_HIKE",
+        "conditions": {
+            "base_interest_trend": "تشديد (Hawkish)",
+            "quote_interest_trend": "تيسير (Dovish)",
+            "geopolitical_state": "سلم وتضخم مرتفع",
+            "trend_context": "هابط رئيسي على 4H مع تصحيح صاعد"
+        },
+        "historical_outcome": "ارتد السعر من مقاومة قوية مؤقتاً ثم استأنف الهبوط الحاد بقوة مع تفوق الدولار.",
+        "success_rate": 0.88
+    },
+    {
+        "scenario_id": "HISTORICAL_TRAIN_EUR_USD_20261025",
+        "conditions": {
+            "asset": "EUR/USD",
+            "strategy": "Long-term SMA Trend Alignment (20-Year Historical)",
+            "training_samples": 4543
+        },
+        "historical_outcome": "تم اختبار النطاق التاريخي بنجاح، معدل دقة النمط الصاعد: 0.14",
+        "success_rate": 0.14
+    },
+    {
+        "scenario_id": "HISTORICAL_TRAIN_GBP_USD_20261025",
+        "conditions": {
+            "asset": "GBP/USD",
+            "strategy": "Long-term SMA Trend Alignment (20-Year Historical)",
+            "training_samples": 4553
+        },
+        "historical_outcome": "تم اختبار النطاق التاريخي بنجاح، معدل دقة النمط الصاعد: 0.12",
+        "success_rate": 0.12
+    },
+    {
+        "scenario_id": "HISTORICAL_TRAIN_USD_JPY_20261025",
+        "conditions": {
+            "asset": "USD/JPY",
+            "strategy": "Long-term SMA Trend Alignment (20-Year Historical)",
+            "training_samples": 6010
+        },
+        "historical_outcome": "تم اختبار النطاق التاريخي بنجاح، معدل دقة النمط الصاعد: 0.13",
+        "success_rate": 0.13
+    },
+    {
+        "scenario_id": "HISTORICAL_TRAIN_AUD_USD_20261025",
+        "conditions": {
+            "asset": "AUD/USD",
+            "strategy": "Long-term SMA Trend Alignment (20-Year Historical)",
+            "training_samples": 4044
+        },
+        "historical_outcome": "تم اختبار النطاق التاريخي بنجاح، معدل دقة النمط الصاعد: 0.13",
+        "success_rate": 0.13
+    },
+    {
+        "scenario_id": "HISTORICAL_TRAIN_USD_CAD_20261025",
+        "conditions": {
+            "asset": "USD/CAD",
+            "strategy": "Long-term SMA Trend Alignment (20-Year Historical)",
+            "training_samples": 4598
+        },
+        "historical_outcome": "تم اختبار النطاق التاريخي بنجاح، معدل دقة النمط الصاعد: 0.12",
+        "success_rate": 0.12
+    },
+    {
+        "scenario_id": "HISTORICAL_TRAIN_NZD_USD_20261025",
+        "conditions": {
+            "asset": "NZD/USD",
+            "strategy": "Long-term SMA Trend Alignment (20-Year Historical)",
+            "training_samples": 4544
+        },
+        "historical_outcome": "تم اختبار النطاق التاريخي بنجاح، معدل دقة النمط الصاعد: 0.14",
+        "success_rate": 0.14
+    },
+    {
+        "scenario_id": "HISTORICAL_TRAIN_USD_CHF_20261025",
+        "conditions": {
+            "asset": "USD/CHF",
+            "strategy": "Long-term SMA Trend Alignment (20-Year Historical)",
+            "training_samples": 4596
+        },
+        "historical_outcome": "تم اختبار النطاق التاريخي بنجاح، معدل دقة النمط الصاعد: 0.11",
+        "success_rate": 0.11
+    },
+    {
+        "scenario_id": "HISTORICAL_TRAIN_XAU_USD_20261025",
+        "conditions": {
+            "asset": "XAU/USD",
+            "strategy": "Long-term SMA Trend Alignment (20-Year Historical)",
+            "training_samples": 5041
+        },
+        "historical_outcome": "تم اختبار النطاق التاريخي بنجاح، معدل دقة النمط الصاعد: 0.22",
+        "success_rate": 0.22
+    },
+    {
+        "scenario_id": "HISTORICAL_TRAIN_XAG_USD_20261025",
+        "conditions": {
+            "asset": "XAG/USD",
+            "strategy": "Long-term SMA Trend Alignment (20-Year Historical)",
+            "training_samples": 5042
+        },
+        "historical_outcome": "تم اختبار النطاق التاريخي بنجاح، معدل دقة النمط الصاعد: 0.17",
+        "success_rate": 0.17
+    }
+]
