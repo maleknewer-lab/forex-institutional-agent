@@ -35,10 +35,10 @@ supported_assets = [
     "BTC/USD"
 ]
 
-selected_asset = st.sidebar.selectbox(
-    "اختر الأصل المالي:",
-    supported_assets
-)
+selected_asset = st.sidebar.selectbox("اختر الأصل المالي:", supported_assets)
+
+# إضافة خيار الإطار الزمني للتحليل
+selected_timeframe = st.sidebar.selectbox("الإطار الزمني (Timeframe):", ["H1", "H4", "Daily", "Weekly"])
 
 win_rates = {
     "XAU/USD": "79.1%", "XAG/USD": "76.8%", "EUR/USD": "68.1%", "GBP/USD": "70.4%",
@@ -52,19 +52,17 @@ st.sidebar.markdown("### 📊 نسبة النجاح التاريخية (Win Rate
 st.sidebar.info(f"**{selected_asset} : {current_rate}**")
 st.sidebar.markdown("---")
 
-# وضع زر التحليل مباشرة تحت الإعدادات في القائمة الجانبية
 analyze_button = st.sidebar.button("🚀 تحليل السوق لحظياً", type="primary", use_container_width=True)
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("📌 **أفق الاستثمار:** تحليل مؤسسي هجين (Macro + SMC)")
+st.sidebar.markdown("📌 **النظام:** تحليل مؤسسي هجين (Macro + SMC)")
 
 if analyze_button:
-    with st.spinner(f"جاري تشغيل محركات الماكرو والسيولة والـ SMC لتحليل {selected_asset}..."):
-        report_data = agent.generate_dual_layer_report(selected_asset)
+    with st.spinner(f"جاري تشغيل محركات الماكرو والسيولة والـ SMC للأصل {selected_asset} على فريم {selected_timeframe}..."):
+        report_data = agent.generate_dual_layer_report(selected_asset, selected_timeframe)
         
-        # وقت التحديث الحالي
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        st.success(f"✅ تم الانتهاء من التحليل بنجاح للأصل: **{selected_asset}** | 🕒 وقت التحديث: {current_time} GMT")
+        st.success(f"✅ تم الانتهاء من التحليل بنجاح للأصل: **{selected_asset}** (الفريم: {selected_timeframe}) | 🕒 {current_time} GMT")
         
         col1, col2 = st.columns(2)
         
@@ -78,8 +76,7 @@ if analyze_button:
             
         st.markdown("---")
         
-        # إخفاء البيانات الخام داخل عنصر قابل للطي لمنع ازدحام الشاشة
         with st.expander("📈 تفاصيل البيانات الخام (Raw Data - للمطورين والتدقيق)"):
             st.json(report_data["raw_data"])
 else:
-    st.info("👈 اضغط على زر **(تحليل السوق لحظياً)** في القائمة الجانبية لبدء تشغيل النظام واستعراض التقارير المؤسسية.")
+    st.info("👈 اختر الأصل والفريم الزمني من القائمة الجانبية ثم اضغط على زر **(تحليل السوق لحظياً)** لبدء تشغيل النظام.")
