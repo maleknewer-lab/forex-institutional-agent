@@ -10,6 +10,7 @@ if current_dir not in sys.path:
 
 from agents.master_agent import MasterInstitutionalAgent
 
+# إعداد الصفحة وتوسيع العرض
 st.set_page_config(
     page_title="Global Macro Quant Trading System",
     page_icon="🏛️",
@@ -22,11 +23,12 @@ def load_agent():
 
 agent = load_agent()
 
+# العنوان الرئيسي مع تنسيق أنيق
 st.title("🏛️ منصة التداول الكمي المؤسسي (Global Macro Quant)")
-st.markdown("نظام هرمي متقدم يدمج العوامل الكلية (Macro)، السيولة، ونبرة البنوك المركزية مع التنفيذ التكتيكي للـ SMC.")
 st.markdown("---")
 
-st.sidebar.header("🎛️ إعدادات التحليل")
+# القائمة الجانبية (Sidebar)
+st.sidebar.header("🎛️ لوحة التحكم وإعدادات التحليل")
 
 supported_assets = [
     "XAU/USD", "XAG/USD",
@@ -35,10 +37,8 @@ supported_assets = [
     "BTC/USD"
 ]
 
-selected_asset = st.sidebar.selectbox("اختر الأصل المالي:", supported_assets)
-
-# إضافة خيار الإطار الزمني للتحليل
-selected_timeframe = st.sidebar.selectbox("الإطار الزمني (Timeframe):", ["H1", "H4", "Daily", "Weekly"])
+selected_asset = st.sidebar.selectbox("🎯 اختر الأصل المالي:", supported_assets)
+selected_timeframe = st.sidebar.selectbox("⏱️ الإطار الزمني للتحليل:", ["H1", "H4", "Daily", "Weekly"])
 
 win_rates = {
     "XAU/USD": "79.1%", "XAG/USD": "76.8%", "EUR/USD": "68.1%", "GBP/USD": "70.4%",
@@ -48,35 +48,42 @@ win_rates = {
 }
 
 current_rate = win_rates.get(selected_asset, "N/A")
-st.sidebar.markdown("### 📊 نسبة النجاح التاريخية (Win Rate):")
+st.sidebar.markdown("### 📊 نسبة النجاح (Win Rate):")
 st.sidebar.info(f"**{selected_asset} : {current_rate}**")
 st.sidebar.markdown("---")
 
-analyze_button = st.sidebar.button("🚀 تحليل السوق لحظياً", type="primary", use_container_width=True)
+analyze_button = st.sidebar.button("🚀 تشغيل التحليل اللحظي", type="primary", use_container_width=True)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("📌 **النظام:** تحليل مؤسسي هجين (Macro + SMC)")
 
+# منطقة العرض الرئيسية
 if analyze_button:
     with st.spinner(f"جاري تشغيل محركات الماكرو والسيولة والـ SMC للأصل {selected_asset} على فريم {selected_timeframe}..."):
         report_data = agent.generate_dual_layer_report(selected_asset, selected_timeframe)
         
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        st.success(f"✅ تم الانتهاء من التحليل بنجاح للأصل: **{selected_asset}** (الفريم: {selected_timeframe}) | 🕒 {current_time} GMT")
+        st.success(f"✅ تم الانتهاء من التحليل بنجاح للأصل: **{selected_asset}** | الإطار الزمني: **{selected_timeframe}** | 🕒 {current_time} GMT")
         
+        # تقسيم الشاشة إلى عمودين منظمين تماماً
         col1, col2 = st.columns(2)
         
         with col1:
             st.markdown("### 👤 التقرير المبسط (للمستخدم العادي)")
-            st.info(report_data["layman_view"])
+            # استخدام container لتشكيل صندوق بطاقة أنيق
+            with st.container(border=True):
+                st.markdown(report_data["layman_view"])
             
         with col2:
             st.markdown("### 🏛️ التقرير الاحترافي (للمحللين والكمّ)")
-            st.success(report_data["institutional_view"])
+            with st.container(border=True):
+                st.markdown(report_data["institutional_view"])
             
         st.markdown("---")
         
-        with st.expander("📈 تفاصيل البيانات الخام (Raw Data - للمطورين والتدقيق)"):
+        # البيانات الخام للمطورين داخل صندوق قابل للطي
+        with st.expander("📈 تفاصيل البيانات الخام والبرمجية (Raw Data - للمتدربين والمطورين)"):
             st.json(report_data["raw_data"])
 else:
-    st.info("👈 اختر الأصل والفريم الزمني من القائمة الجانبية ثم اضغط على زر **(تحليل السوق لحظياً)** لبدء تشغيل النظام.")
+    # شاشة الترحيب قبل الضغط على الزر
+    st.info("👈 يرجى اختيار الأصل المالي والإطار الزمني من القائمة الجانبية، ثم الضغط على زر **(تشغيل التحليل اللحظي)** لاستعراض التقارير.")
