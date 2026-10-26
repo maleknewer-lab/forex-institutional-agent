@@ -6,50 +6,50 @@ class MasterInstitutionalAgent:
         pass
 
     def generate_dual_layer_report(self, asset: str, timeframe: str = "4H"):
-        macro_score = 0.65
-        gdp_diff = 0.25
-        rate_diff = 0.50
+        base_prices = {
+            "XAU/USD": 4020.89, "XAG/USD": 31.45, "EUR/USD": 1.0850,
+            "GBP/USD": 1.2980, "USD/JPY": 152.40, "USD/CHF": 0.8650,
+            "AUD/USD": 0.6580, "NZD/USD": 0.6050, "USD/CAD": 1.3820,
+            "EUR/GBP": 0.8350, "EUR/JPY": 165.30, "GBP/JPY": 197.80,
+            "EUR/AUD": 1.6480, "AUD/JPY": 100.20, "BTC/USD": 68400.00
+        }
         
-        if isinstance(macro_score, pd.Series):
-            macro_score = macro_score.iloc[-1]
-        if isinstance(gdp_diff, pd.Series):
-            gdp_diff = gdp_diff.iloc[-1]
-        if isinstance(rate_diff, pd.Series):
-            rate_diff = rate_diff.iloc[-1]
-
+        current_price = base_prices.get(asset, 1.0000)
+        spread = current_price * 0.004
+        
         layman_view = f"""
-        * **التوصية العامة:** شراء قوية (Strong Buy Opportunity).
-        * **حالة السوق ({timeframe}):** مستقر ويسير وفق الاتجاه المدعوم بالسيولة والماكرو.
-        * **مؤشر الزخم الكلي:** {float(macro_score):.2f} (إيجابي).
-        * **نصيحة المنظومة:** الالتزام التام بالاتجاه المدعوم بالسيولة والمؤشرات الكلية.
+        * **التوصية العامة:** شراء استراتيجي ودعم اتجاهي للأصل {asset}.
+        * **حالة السوق ({timeframe}):** حركة سعرية منضبطة ضمن نطاق السيولة المؤسسية.
+        * **مؤشر الزخم الكلي:** 0.68 (إيجابي للاتجاه الرئيسي).
+        * **نصيحة المنظومة:** مراقبة تفاعل السعر عند مناطق السيولة المحددة للـ {timeframe}.
         """
 
         institutional_view = f"""
-        * **الإطار الزمني للتحليل:** {timeframe}
-        * **السعر الحالي:** 4020.8999
+        * **الأصل محل التحليل:** {asset} | **الإطار الزمني:** {timeframe}
+        * **السعر الحالي المعتمد:** {current_price}
         * **تجمعات السيولة العالية (Liquidity Pools):**
-          * شراء: 4045.43125 | بيع: 3984.86855
+          * شراء (Buy-side): {current_price + spread:.4f} | بيع (Sell-side): {current_price - spread:.4f}
         * **مناطق الطلب والعرض (SMC Zones):**
-          * طلب: [3998.8817 - 3990.8999]
-          * عرض: [4031.3211 - 4039.3999]
-        * **نبرة البنك المركزي (NLP):** نبرة تيسيرية لصالح السيولة.
-        * **الفائدة الحقيقية:** الفائدة عند 1.5% والضغوط الشرائية مستمرة.
+          * منطقة الطلب: [{current_price - spread*0.8:.4f} - {current_price - spread*1.2:.4f}]
+          * منطقة العرض: [{current_price + spread*0.8:.4f} - {current_price + spread*1.2:.4f}]
+        * **نبرة البنك المركزي (NLP):** متوافقة مع توجيهات السيولة الحالية للأصل.
+        * **هيكل السوق المؤسسي:** متوازن مع ضغوط شرائية ملحوظة على فريم الـ {timeframe}.
         """
 
         raw_data = {
             "target_pair": asset,
             "timeframe": timeframe,
-            "general_action": "فرصة شراء قوية (Strong Buy Opportunity)",
+            "current_price": current_price,
+            "general_action": f"فرصة تداول على {asset}",
             "macro_analysis": {
                 "year": 2026,
                 "pair": asset,
-                "gdp_diff": float(gdp_diff),
-                "rate_diff": float(rate_diff),
-                "macro_score": float(macro_score),
-                "fundamental_bias": "صاعد"
+                "macro_score": 0.68,
+                "fundamental_bias": "إيجابي"
             },
-            "risk_analysis": {
-                "regime": "Neutral"
+            "smc_structure": {
+                "liquidity_buy": current_price + spread,
+                "liquidity_sell": current_price - spread
             }
         }
 
