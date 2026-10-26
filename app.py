@@ -3,14 +3,12 @@ import pandas as pd
 import sys
 import os
 
-# إضافة جذر المشروع لمسار بايثون
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.append(current_dir)
 
 from agents.master_agent import MasterInstitutionalAgent
 
-# إعداد الصفحة وتصميم الواجهة الاحترافية
 st.set_page_config(
     page_title="Global Macro Quant Trading System",
     page_icon="🏛️",
@@ -27,7 +25,6 @@ st.title("🏛️ منصة التداول الكمي المؤسسي (Global Macr
 st.markdown("نظام هرمي متقدم يدمج العوامل الكلية (Macro)، السيولة، ونبرة البنوك المركزية مع التنفيذ التكتيكي للـ SMC.")
 st.markdown("---")
 
-# الشريط الجانبي لاختيار الأصل
 st.sidebar.header("🎛️ إعدادات التحليل")
 selected_asset = st.sidebar.selectbox(
     "اختر الأصل المالي:",
@@ -42,8 +39,9 @@ win_rates = {
     "AUD/USD": "71.6%"
 }
 
-st.sidebar.markdown(f"### 📊 الـ Win Rate المعتمد:
- **{selected_asset} : {win_rates.get(selected_asset, 'N/A')}**")
+current_rate = win_rates.get(selected_asset, "N/A")
+st.sidebar.markdown("### 📊 الـ Win Rate المعتمد:")
+st.sidebar.markdown(f"**{selected_asset} : {current_rate}**")
 st.sidebar.markdown("---")
 
 if st.sidebar.button("🚀 تحليل السوق لحظياً", type="primary"):
