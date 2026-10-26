@@ -10,7 +10,6 @@ if current_dir not in sys.path:
 
 from agents.master_agent import MasterInstitutionalAgent
 
-# إعداد الصفحة وتوسيع العرض
 st.set_page_config(
     page_title="Global Macro Quant Trading System",
     page_icon="🏛️",
@@ -23,11 +22,10 @@ def load_agent():
 
 agent = load_agent()
 
-# العنوان الرئيسي مع تنسيق أنيق
 st.title("🏛️ منصة التداول الكمي المؤسسي (Global Macro Quant)")
+st.markdown("نظام هرمي متقدم يدمج العوامل الكلية (Macro)، السيولة، ونبرة البنوك المركزية مع التنفيذ التكتيكي للـ SMC.")
 st.markdown("---")
 
-# القائمة الجانبية (Sidebar)
 st.sidebar.header("🎛️ لوحة التحكم وإعدادات التحليل")
 
 supported_assets = [
@@ -57,7 +55,7 @@ analyze_button = st.sidebar.button("🚀 تشغيل التحليل اللحظي"
 st.sidebar.markdown("---")
 st.sidebar.markdown("📌 **النظام:** تحليل مؤسسي هجين (Macro + SMC)")
 
-# منطقة العرض الرئيسية
+# منطقة العرض الرئيسية بترتيب الصفوف الأفقية (تأخذ عرض الصفحة كاملاً)
 if analyze_button:
     with st.spinner(f"جاري تشغيل محركات الماكرو والسيولة والـ SMC للأصل {selected_asset} على فريم {selected_timeframe}..."):
         report_data = agent.generate_dual_layer_report(selected_asset, selected_timeframe)
@@ -65,25 +63,22 @@ if analyze_button:
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         st.success(f"✅ تم الانتهاء من التحليل بنجاح للأصل: **{selected_asset}** | الإطار الزمني: **{selected_timeframe}** | 🕒 {current_time} GMT")
         
-        # تقسيم الشاشة إلى عمودين منظمين تماماً
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("### 👤 التقرير المبسط (للمستخدم العادي)")
-            # استخدام container لتشكيل صندوق بطاقة أنيق
-            with st.container(border=True):
-                st.markdown(report_data["layman_view"])
+        # 1. صف التقرير المبسط (يأخذ عرض الصفحة كاملاً)
+        st.markdown("### 👤 التقرير المبسط (للمستخدم العادي)")
+        with st.container(border=True):
+            st.markdown(report_data["layman_view"])
             
-        with col2:
-            st.markdown("### 🏛️ التقرير الاحترافي (للمحللين والكمّ)")
-            with st.container(border=True):
-                st.markdown(report_data["institutional_view"])
+        st.markdown("") # مسافة فارغة للتنسيق
+        
+        # 2. صف التقرير الاحترافي (يأخذ عرض الصفحة كاملاً وبتنسيق متسلسل وواضح)
+        st.markdown("### 🏛️ التقرير الاحترافي الشامل (للمحللين والكمّ)")
+        with st.container(border=True):
+            st.markdown(report_data["institutional_view"])
             
         st.markdown("---")
         
-        # البيانات الخام للمطورين داخل صندوق قابل للطي
+        # 3. قسم البيانات الخام
         with st.expander("📈 تفاصيل البيانات الخام والبرمجية (Raw Data - للمتدربين والمطورين)"):
             st.json(report_data["raw_data"])
 else:
-    # شاشة الترحيب قبل الضغط على الزر
     st.info("👈 يرجى اختيار الأصل المالي والإطار الزمني من القائمة الجانبية، ثم الضغط على زر **(تشغيل التحليل اللحظي)** لاستعراض التقارير.")
