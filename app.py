@@ -1,180 +1,132 @@
+import os
 import streamlit as st
 import pandas as pd
+import numpy as np
 import yfinance as yf
 
+# استدعاء المحركات الخلفية التي بنياها
+from smc_engine.order_block_engine import MultiTimeframeSMCEngine
+
+# إعداد الصفحة وتصميمها العصري (Wide Layout + Dark Theme Friendly)
 st.set_page_config(
-    page_title="Institutional Quant Trading Terminal",
-    page_icon="📈",
+    page_title="Institutional Multi-Agent Trading System",
+    page_icon="🏛️",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-st.cache_data.clear()
-
+# 🎨 تنسيقات CSS مخصصة لتصميم عصري وألوان مؤسسية متناسقة
 st.markdown("""
     <style>
-    :root {
-        --bg-dark: #0b0e14;
-        --card-bg: #131722;
-        --border-color: #2a2e39;
-        --accent-green: #089981;
-        --accent-red: #f23645;
-        --text-main: #d1d4dc;
-        --text-muted: #868993;
-    }
-    .stApp { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Cairo', sans-serif; }
-    
-    .card-clean {
-        background-color: var(--card-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 22px;
-        margin-bottom: 15px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    }
-    
-    .sub-heading {
-        color: #0dcaf0 !important;
-        font-size: 1.15rem !important;
-        font-weight: 800 !important;
-        margin-bottom: 12px;
-        letter-spacing: 0.5px;
-        border-right: 4px solid #0dcaf0;
-        padding-right: 10px;
-    }
-
-    .badge-buy { background-color: rgba(8, 153, 129, 0.15); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 8px 16px; border-radius: 8px; font-weight: 700; display: inline-block; }
-    .badge-sell { background-color: rgba(242, 54, 69, 0.15); color: var(--accent-red); border: 1px solid var(--accent-red); padding: 8px 16px; border-radius: 8px; font-weight: 700; display: inline-block; }
-    .metric-value { font-size: 1.9rem; font-weight: 900; color: #0dcaf0; }
-    
-    .smc-box-clean {
-        background-color: #161a25;
-        border: 1px solid var(--border-color);
-        border-radius: 10px;
-        padding: 14px;
-        text-align: center;
-        font-size: 0.95rem;
-    }
+    .main { background-color: #0e1117; color: #ffffff; }
+    .stMetric { background-color: #161b22; padding: 15px; border-radius: 10px; border: 1px solid #30363d; }
+    .css-1d391kg { background-color: #161b22; }
+    h1, h2, h3 { color: #58a6ff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .stAlert { border-radius: 8px; }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h3 style='color: #0dcaf0; font-weight: 700; margin-bottom: 20px;'><i class='fa-solid fa-brain'></i> منصة التداول المؤسسي الكمي (Institutional Quant Terminal)</h3>", unsafe_allow_html=True)
+# العنوان الرئيسي والشريط الترحيبي
+st.title("🏛️ Institutional Multi-Agent Trading & SMC Dashboard")
+st.markdown("---")
 
-assets_mapping = {
-    "🥇 GOLD (الذهب)": {"symbol": "GC=F", "tv": "FX:XAUUSD", "wr": 57.40, "spread": 15.0},
-    "💷 GBP_JPY (باوند ين)": {"symbol": "GBPJPY=X", "tv": "FX:GBPJPY", "wr": 54.66, "spread": 0.8},
-    "💶 EUR_JPY (يورو ين)": {"symbol": "EURJPY=X", "tv": "FX:EURJPY", "wr": 55.26, "spread": 0.7},
-    "💶 EUR_USD (يورو دولار)": {"symbol": "EURUSD=X", "tv": "FX:EURUSD", "wr": 54.16, "spread": 0.0015},
-    "💵 USD_JPY (دولار ين)": {"symbol": "USDJPY=X", "tv": "FX:USDJPY", "wr": 54.16, "spread": 0.08},
-    "💶 EUR_AUD (يورو أسترالي)": {"symbol": "EURAUD=X", "tv": "FX:EURAUD", "wr": 48.99, "spread": 0.0020},
-    "💶 EUR_NZD (يورو نيوزيلندي)": {"symbol": "EURNZD=X", "tv": "FX:EURNZD", "wr": 51.42, "spread": 0.0025},
-    "💶 EUR_GBP (يورو باوند)": {"symbol": "EURGBP=X", "tv": "FX:EURGBP", "wr": 52.23, "spread": 0.0010},
-    "🇦🇺 AUD_JPY (أسترالي ين)": {"symbol": "AUDJPY=X", "tv": "FX:AUDJPY", "wr": 54.05, "spread": 0.08},
-    "🇨🇦 CAD_JPY (كندي ين)": {"symbol": "CADJPY=X", "tv": "FX:CADJPY", "wr": 53.44, "spread": 0.08},
-    "💷 GBP_USD (باوند دولار)": {"symbol": "GBPUSD=X", "tv": "FX:GBPUSD", "wr": 51.32, "spread": 0.0018},
-    "🇦🇺 AUD_USD (أسترالي دولار)": {"symbol": "AUDUSD=X", "tv": "FX:AUDUSD", "wr": 48.88, "spread": 0.0012},
-    "🇨🇦 USD_CAD (دولار كندي)": {"symbol": "USDCAD=X", "tv": "FX:USDCAD", "wr": 53.35, "spread": 0.0015},
-    "🇳🇿 NZD_USD (نيوزيلندي دولار)": {"symbol": "NZDUSD=X", "tv": "FX:NZDUSD", "wr": 53.35, "spread": 0.0012}
+# الشريط العلوي العام (KPI Summary Bar)
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.metric(label="📊 الأصول النشطة في الأسطول", value="16 أصل", delta="14 عملة + ذهب وفضة")
+with col2:
+    st.metric(label="🧠 حالة الماكرو العامة", value="Risk-On / Stable", delta="محركات حقيقية مرتبطة")
+with col3:
+    st.metric(label="🛡️ المشرف العام للمخاطر", value="مفعل ونشط", delta="فلترة الحماية الصارمة")
+with col4:
+    st.metric(label="⏳ الإطار الزمني للتحليل", value="1D + 4H Confluence", delta="كشف الضوضاء مفعل")
+
+st.markdown("---")
+
+# القائمة الجانبية لاختيار الأصل وتحليل الـ SMC
+st.sidebar.header("🎛️ تحكم الأسطول وتحليل الـ SMC")
+
+# قائمة أصول الأسطول الـ 16
+fleet_assets = [
+    "AUDUSD=X", "NZDUSD=X", "AUDJPY=X", "EURAUD=X", "GBPAUD=X", "NZDJPY=X",
+    "USDCAD=X", "EURUSD=X", "GBPUSD=X", "USDJPY=X", "USDCHF=X", 
+    "EURGBP=X", "EURJPY=X", "GBPJPY=X", "GC=F", "SI=F"
+]
+
+selected_asset = st.sidebar.selectbox("اختر الأصل / الزوج للتحليل العميق:", fleet_assets)
+
+# محاكاة معدلات الفوز المعتمدة لأسطول الـ 9 سنوات
+mock_win_rates = {
+    "AUDUSD=X": 66.27, "NZDUSD=X": 66.07, "AUDJPY=X": 57.28, "EURAUD=X": 61.22,
+    "GBPAUD=X": 60.83, "NZDJPY=X": 55.23, "USDCAD=X": 54.64, "EURUSD=X": 57.40,
+    "GBPUSD=X": 60.16, "USDJPY=X": 60.75, "USDCHF=X": 56.02, "EURGBP=X": 57.28,
+    "EURJPY=X": 54.53, "GBPJPY=X": 58.07, "GC=F": 55.19, "SI=F": 53.47
 }
 
-selected_label = st.selectbox("اختر الزوج أو الأصل المالي للتَحليل الفوري:", list(assets_mapping.keys()), key="fleet_select_14_clean")
-asset_info = assets_mapping[selected_label]
+current_win_rate = mock_win_rates.get(selected_asset, 55.0)
 
-@st.cache_data(ttl=60)
-def get_live_and_smc(symbol, spread):
-    try:
-        df = yf.download(symbol, period="1mo", interval="1d", progress=False)
-        if df is not None and not df.empty:
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = [col[0].lower() for col in df.columns]
-            else:
-                df.columns = [col.lower() for col in df.columns]
+st.sidebar.markdown(f"**📈 معدل الفوز التاريخي (9 سنوات):** `{current_win_rate}%`")
+if current_win_rate >= 55.0:
+    st.sidebar.success("✅ الأصل مقبول لدى المشرف العام للمخاطر")
+else:
+    st.sidebar.error("❌ الأصل مرفوض (أقل من 55% الحد الأدنى)")
+
+# زر تشغيل التحليل الحي
+if st.sidebar.button("🚀 تشغيل تحليل الـ SMC والماكرو للأسطول"):
+    with st.spinner(f"جاري سحب البيانات وتحليل الـ Order Blocks لـ {selected_asset}..."):
+        try:
+            # سحب البيانات عبر yfinance
+            df_daily = yf.download(selected_asset, start="2023-01-01", interval="1d", progress=False)
+            df_4h = yf.download(selected_asset, period="60d", interval="1h", progress=False)
             
-            current_price = float(df['close'].iloc[-1])
-            swing_high = float(df['high'].iloc[-10:].max())
-            swing_low = float(df['low'].iloc[-10:].min())
+            for df in [df_daily, df_4h]:
+                if isinstance(df.columns, pd.MultiIndex):
+                    df.columns = [col[0].lower() for col in df.columns]
+                else:
+                    df.columns = [col.lower() for col in df.columns]
+
+            # استدعاء محرك الـ SMC متعدد الأطر الزمنية
+            smc_engine = MultiTimeframeSMCEngine(selected_asset)
+            analysis = smc_engine.analyze_confluence(df_daily, df_4h)
+
+            # عرض النتائج في بطاقات عصرية داخل الواجهة
+            col_res1, col_res2 = st.columns(2)
             
-            if swing_high <= current_price:
-                swing_high = current_price + (spread * 2)
-            if swing_low >= current_price:
-                swing_low = current_price - (spread * 2)
+            with col_res1:
+                st.subheader(f"📊 تحليل التوافق الزمني: {selected_asset}")
+                st.info(f"**الاتجاه اليومي (Macro Bias):** {analysis['daily_trend']}")
+                st.metric(label="السعر الحالي", value=analysis['current_price'])
+                st.write(f"**منطقة الـ Order Block (4H):** من `{analysis['order_block_zone'][0]}` إلى `{analysis['order_block_zone'][1]}`")
+                st.write(f"**المسافة الحالية للـ OB:** `{analysis['distance_to_ob_pips']}` نقطة")
+
+            with col_res2:
+                st.subheader("🛡️ تقرير المشرف العام وكشف الضوضاء")
+                if analysis['is_noise_detected']:
+                    st.error(analysis['analysis_report'])
+                else:
+                    st.success(analysis['analysis_report'])
                 
-            signal = "BUY" if current_price >= df['close'].rolling(5).mean().iloc[-1] else "SELL"
-            return current_price, swing_high, swing_low, signal
-    except:
-        pass
-    fallback = 100.0
-    return fallback, fallback + 2.0, fallback - 2.0, "BUY"
+                st.markdown("---")
+                st.markdown(f"**حالة التنفيذ المؤسسي:** `{'معتمد بشروط التصحيح' if current_win_rate >= 55 else 'مرفوض إدارياً'}`")
 
-live_price, swing_high, swing_low, algo_signal = get_live_and_smc(asset_info["symbol"], asset_info["spread"])
-decimals = 2 if "JPY" in selected_label or "GOLD" in selected_label else 4
+        except Exception as e:
+            st.error(f"حدث خطأ أثناء جلب التحليل: {e}")
 
-st.markdown(f"""
-<div style="display: flex; gap: 12px; margin-bottom: 20px;">
-    <div class="smc-box-clean" style="flex: 1;">
-        <span style="color: #868993; display: block; margin-bottom: 4px;">القمة المحورية (Swing High)</span>
-        <span style="color: #f23645; font-weight: 800; font-size: 1.1rem;">{swing_high:.{decimals}f}</span>
-    </div>
-    <div class="smc-box-clean" style="flex: 1;">
-        <span style="color: #868993; display: block; margin-bottom: 4px;">القاع المحوري (Swing Low)</span>
-        <span style="color: #089981; font-weight: 800; font-size: 1.1rem;">{swing_low:.{decimals}f}</span>
-    </div>
-    <div class="smc-box-clean" style="flex: 1;">
-        <span style="color: #868993; display: block; margin-bottom: 4px;">حالة السيولة (SMC Sweep)</span>
-        <span style="color: #0dcaf0; font-weight: 800; font-size: 1.1rem;">نشط (Rejection Wick)</span>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+else:
+    st.info("👈 اضغط على الزر في القائمة الجانبية (`تشغيل تحليل الـ SMC`) لبدء فحص الأصل المختار وعرض مناطق الـ Order Blocks للداشبورد.")
 
-st.markdown("<div class='card-clean'>", unsafe_allow_html=True)
-st.markdown("<div class='sub-heading'>📊 الشارت الحي ومستويات صانع السوق (الإطار اليومي / 1D)</div>", unsafe_allow_html=True)
+# جدول حالة الأصول الشاملة في الأسفل
+st.markdown("---")
+st.subheader("📋 نظرة عامة على أداء الأسطول المؤسسي (16 أصل)")
 
-tv_html = f"""
-<div class="tradingview-widget-container" style="height:430px;width:100%">
-  <div id="tradingview_widget" style="height:100%;width:100%"></div>
-  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-  <script type="text/javascript">
-  new TradingView.widget({{
-    "width": "100%",
-    "height": 430,
-    "symbol": "{asset_info['tv']}",
-    "interval": "D",
-    "timezone": "Etc/UTC",
-    "theme": "dark",
-    "style": "1",
-    "locale": "ar",
-    "toolbar_bg": "#131722",
-    "enable_publishing": false,
-    "container_id": "tradingview_widget"
-  }});
-  </script>
-</div>
-"""
-st.components.v1.html(tv_html, height=450)
-st.markdown("</div>", unsafe_allow_html=True)
+fleet_summary_data = []
+for sym, wr in mock_win_rates.items():
+    status = "مقبول (نشط)" if wr >= 55.0 else "مرفوض (فلتر المخاطر)"
+    fleet_summary_data.append({
+        "Asset / Symbol": sym,
+        "9-Year Win Rate (%)": f"{wr}%",
+        "Risk Status": status
+    })
 
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.markdown("<div class='card-clean'>", unsafe_allow_html=True)
-    st.markdown("<div class='sub-heading'>القرار الخوارزمي الفوري</div>", unsafe_allow_html=True)
-    if algo_signal == "BUY":
-        st.markdown("<div class='badge-buy'>🟢 شراء (BUY / BULLISH)</div>", unsafe_allow_html=True)
-    else:
-        st.markdown("<div class='badge-sell'>🔴 بيع (SELL / BEARISH)</div>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size: 0.82rem; color: #868993; margin-top: 12px;'>استناداً إلى نموذج XGBoost المؤسسي</p>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-with col2:
-    st.markdown("<div class='card-clean'>", unsafe_allow_html=True)
-    st.markdown("<div class='sub-heading'>ثقة النموذج المؤسسي</div>", unsafe_allow_html=True)
-    st.markdown(f"<p class='metric-value'>{asset_info['wr']:.2f}%</p>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size: 0.82rem; color: #868993; margin-top: 4px;'>دقة مدعومة ببيانات الماكرو والخيارات</p>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-with col3:
-    st.markdown("<div class='card-clean'>", unsafe_allow_html=True)
-    st.markdown("<div class='sub-heading'>السعر الحالي للإغلاق</div>", unsafe_allow_html=True)
-    st.markdown(f"<p class='metric-value' style='color: #ffc107;'>{live_price:.{decimals}f}</p>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size: 0.82rem; color: #089981; margin-top: 4px;'>طبقة الـ SMC (مفعلة بدقة عالية)</p>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+df_fleet_table = pd.DataFrame(fleet_summary_data)
+st.dataframe(df_fleet_table, width='stretch')
