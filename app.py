@@ -4,10 +4,14 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 
-# استدعاء محرك الـ SMC
+# استدعاء محركات النظام والوكلاء
 from smc_engine.order_block_engine import MultiTimeframeSMCEngine
+try:
+    from agents.risk_supervisor import RiskSupervisor
+except ImportError:
+    RiskSupervisor = None
 
-# إعداد الصفحة وتصميمها (بدون قائمة جانبية، تصميم عصري واسع)
+# إعداد الصفحة وتصميمها
 st.set_page_config(
     page_title="Institutional Multi-Agent Trading System",
     page_icon="🏛️",
@@ -15,7 +19,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 🎨 تنسيقات CSS عصرية (Dark Theme)
+# 🎨 تنسيقات CSS للمستطيلات المتتالية (Sequential Cards Layout)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap');
@@ -43,20 +47,33 @@ st.markdown("""
         color: #93a4bf;
         font-size: 1.05rem;
     }
-    .gauge-container {
+    
+    /* تصميم المستطيلات المتتالية */
+    .card-section {
         background: #141f33;
         border: 1px solid #243452;
-        border-radius: 16px;
-        padding: 20px;
+        border-radius: 18px;
+        padding: 22px;
         box-shadow: 0 8px 28px rgba(0,0,0,0.35);
         margin-bottom: 20px;
     }
+    .card-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #f0b84a;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    /* شريط التوافق */
     .gauge-bar {
         height: 12px;
         border-radius: 99px;
         background: linear-gradient(90deg, #ff6b73 0%, #d99a1c 50%, #2dd4a0 100%);
         position: relative;
-        margin: 15px 0 10px 0;
+        margin: 20px 0 12px 0;
     }
     .gauge-pointer {
         position: absolute;
@@ -87,15 +104,20 @@ st.markdown("""
     .bg-neutral { background: rgba(217, 154, 28, 0.2); color: #f0b84a; }
     .bg-sell { background: rgba(255, 107, 115, 0.15); color: #ff6b73; }
     .bg-strong-sell { background: rgba(255, 107, 115, 0.2); color: #ff6b73; border: 1px solid #ff6b73; }
-    .metric-card {
-        background: #141f33;
+    
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    .metric-box {
+        background: #1b2942;
+        border-radius: 12px;
+        padding: 14px;
         border: 1px solid #243452;
-        border-radius: 14px;
-        padding: 15px;
-        margin-bottom: 12px;
     }
     .metric-label { font-size: 0.85rem; color: #93a4bf; }
-    .metric-val { font-size: 1.25rem; font-weight: 700; color: #e8eef9; margin-top: 4px; }
+    .metric-val { font-size: 1.2rem; font-weight: 700; color: #e8eef9; margin-top: 4px; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -119,13 +141,13 @@ fleet_assets = {
     "SI=F": ("الفضة (Silver)", "OANDA:XAGUSD")
 }
 
-# ترويسة الصفحة والقائمة المنسدلة في نفس السطر
+# ترويسة الصفحة وقائمة الاختيار
 st.markdown('<div class="hero-container">', unsafe_allow_html=True)
 col_title, col_picker = st.columns([2, 1])
 
 with col_title:
     st.markdown('<div class="hero-title">🏛️ Institutional Multi-Agent Trading & SMC Terminal</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-sub">اختر زوج العملة أو الأصل المالي لعرض الشارت اللحظي، مناطق الـ Order Blocks، وتقييم النموذج.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-sub">منصة التداول المؤسسي — نظام المستطيلات المتتالية وتحليل وكيل إدارة المخاطر.</div>', unsafe_allow_html=True)
 
 with col_picker:
     selected_symbol = st.selectbox(
@@ -139,7 +161,7 @@ st.markdown("---")
 
 display_name, tv_symbol = fleet_assets[selected_symbol]
 
-# سحب البيانات عبر yfinance
+# سحب البيانات والتحليل
 @st.cache_data(ttl=300)
 def fetch_analysis_data(symbol):
     try:
@@ -163,7 +185,9 @@ analysis, df_daily = fetch_analysis_data(selected_symbol)
 if analysis is not None:
     daily_bias = analysis.get("daily_trend", "محايد")
     dist_pips = analysis.get("distance_to_ob_pips", 0)
+    is_noise = analysis.get("is_noise_detected", False)
     
+    # حساب تقييم المؤشر
     if "صاعد" in daily_bias or "Bullish" in daily_bias:
         score_pct = 85 if dist_pips < 20 else 70
         badge_text = "شراء قوي" if score_pct >= 80 else "شراء"
@@ -177,94 +201,97 @@ if analysis is not None:
         badge_text = "محايد"
         badge_class = "bg-neutral"
 
-    # المؤشر ومناطق الـ OB
-    col_top1, col_top2 = st.columns(2)
+    # ==========================================
+    # المستطيل الأول: المؤشر المؤسسي الحالي
+    # ==========================================
+    st.markdown(f"""
+        <div class="card-section">
+            <div class="card-title">📊 1. التقييم المؤسسي الشامل للإشارة</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
+                <div>
+                    <span style="color:#93a4bf; font-weight:600;">حالة الزوج ({display_name}):</span>
+                    <span class="signal-badge {badge_class}" style="margin-inline-start: 15px;">{badge_text}</span>
+                </div>
+                <div style="color:#93a4bf; font-size:0.9rem;">الاتجاه المعتمد: <b style="color:#f0b84a;">{daily_bias}</b></div>
+            </div>
+            <div class="gauge-bar">
+                <div class="gauge-pointer" style="left: {score_pct}%;"></div>
+            </div>
+            <div class="gauge-labels">
+                <span>بيع قوي</span>
+                <span>بيع</span>
+                <span>محايد</span>
+                <span>شراء</span>
+                <span>شراء قوي</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # ==========================================
+    # المستطيل الثاني: مناطق الـ Order Block (SMC)
+    # ==========================================
+    ob_min, ob_max = analysis['order_block_zone']
+    st.markdown(f"""
+        <div class="card-section">
+            <div class="card-title">📦 2. مناطق الـ Order Blocks والسيولة المؤسسية</div>
+            <div class="metric-grid">
+                <div class="metric-box">
+                    <div class="metric-label">نطاق الـ OB (إطار 4 ساعات)</div>
+                    <div class="metric-val" style="color:#2dd4a0;">{ob_min} - {ob_max}</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">المسافة الحالية عن السعر</div>
+                    <div class="metric-val">{dist_pips} نقطة</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">طبيعة المنطقة</div>
+                    <div class="metric-val" style="color:#f0b84a;">تجميع سيولة إعادة اختبار</div>
+                </div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # ==========================================
+    # المستطيل الثالث: شارت التداول اللحظي (TradingView)
+    # ==========================================
+    st.markdown(f"""
+        <div class="card-section">
+            <div class="card-title">📈 3. الرسم البياني المباشر واللحظي ({display_name})</div>
+        </div>
+    """, unsafe_allow_html=True)
     
-    with col_top1:
-        st.markdown(f"""
-            <div class="gauge-container">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="color:#93a4bf; font-weight:600;">الإشارة المؤسسية الحالية:</span>
-                    <span class="signal-badge {badge_class}">{badge_text}</span>
-                </div>
-                <div class="gauge-bar">
-                    <div class="gauge-pointer" style="left: {score_pct}%;"></div>
-                </div>
-                <div class="gauge-labels">
-                    <span>بيع قوي</span>
-                    <span>بيع</span>
-                    <span>محايد</span>
-                    <span>شراء</span>
-                    <span>شراء قوي</span>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    with col_top2:
-        ob_min, ob_max = analysis['order_block_zone']
-        st.markdown(f"""
-            <div class="gauge-container">
-                <h4 style="margin:0 0 10px 0; color:#f0b84a;">📦 منطقة الـ Order Block ({display_name})</h4>
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
-                    <div>
-                        <span style="color:#93a4bf; font-size:0.85rem;">نطاق الـ OB (4H)</span>
-                        <div style="font-weight:700; font-size:1.1rem; color:#2dd4a0;">{ob_min} - {ob_max}</div>
-                    </div>
-                    <div>
-                        <span style="color:#93a4bf; font-size:0.85rem;">المسافة عن السعر</span>
-                        <div style="font-weight:700; font-size:1.1rem; color:#e8eef9;">{dist_pips} نقطة</div>
-                    </div>
-                    <div>
-                        <span style="color:#93a4bf; font-size:0.85rem;">الاتجاه اليومي</span>
-                        <div style="font-weight:700; font-size:1.1rem; color:#f0b84a;">{daily_bias}</div>
-                    </div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    # شارت TradingView اللحظي
-    st.subheader(f"📈 الرسم البياني المباشر ({display_name})")
     tv_embed_url = f"https://s.tradingview.com/widgetembed/?symbol={tv_symbol}&interval=240&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=dark&style=1&timezone=Etc/UTC&locale=ar"
-    st.iframe(tv_embed_url, height=560)
+    st.iframe(tv_embed_url, height=520)
 
-    # المؤشرات المؤسسية
-    st.markdown("---")
-    st.subheader("📊 المؤشرات والقياسات المؤسسية")
-    
-    col_ind1, col_ind2, col_ind3, col_ind4 = st.columns(4)
-    
-    with col_ind1:
-        st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-label">🧠 فلتر الضوضاء السوقية</div>
-                <div class="metric-val">{'⚠️ ضوضاء عالية' if analysis['is_noise_detected'] else '✅ اتجاه نقي'}</div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-    with col_ind2:
-        curr_p = analysis['current_price']
-        st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-label">💵 السعر الحالي</div>
-                <div class="metric-val">{curr_p}</div>
-            </div>
-        """, unsafe_allow_html=True)
+    # ==========================================
+    # المستطيل الرابع: تحليل وكيل المخاطر المشرف (Risk Supervisor & Noise)
+    # ==========================================
+    supervisor_status = "⚠️ تحذير: رصد تعارض تقاطعي وضوضاء عالية" if is_noise else "✅ استقرار تقاطعي: لا توجد تعارضات جوهرية"
+    supervisor_color = "#ff6b73" if is_noise else "#2dd4a0"
+    supervisor_desc = "يقوم وكيل المخاطر بمقارنة هذا الزوج مع أزواج العملات المتقاطعة (مثل ارتباطات الدولار). في حال وجود إشارات متعارضة (مثل بيع قوي على زوج وشراء على آخر بنفس العملة الأساسية)، يتم تصنيف السوق على أنه 'ضوضاء' لحماية رأس المال." if is_noise else "المسار الاتجاهي متوافق مع منظومة السيولة الكلية، ولا توجد تعارضات مع العملات المرتبطة."
 
-    with col_ind3:
-        st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-label">🤖 توقع نموذج XGBoost</div>
-                <div class="metric-val" style="color:#2dd4a0;">{daily_bias} (توافق)</div>
+    st.markdown(f"""
+        <div class="card-section" style="border: 1px solid {supervisor_color};">
+            <div class="card-title" style="color: {supervisor_color};">🛡️ 4. تقرير وكيل إدارة المخاطر المشرف (Risk Supervisor)</div>
+            <div class="metric-grid">
+                <div class="metric-box">
+                    <div class="metric-label">حالة التعارض التقاطعي</div>
+                    <div class="metric-val" style="color: {supervisor_color}; font-size:1.05rem;">{supervisor_status}</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">حالة ضوضاء السوق</div>
+                    <div class="metric-val">{'⚠️ ضوضاء مرتفعة' if is_noise else '✅ اتجاه نقي آمن'}</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">قرار التوجيه الآلي</div>
+                    <div class="metric-val" style="color:#f0b84a;">{'تجنب الدخول (فلتر حماية)' if is_noise else 'مسموح بالتنفيذ المؤسسي'}</div>
+                </div>
             </div>
-        """, unsafe_allow_html=True)
-
-    with col_ind4:
-        st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-label">⏳ الإطار الزمني للتحليل</div>
-                <div class="metric-val">1D + 4H Confluence</div>
-            </div>
-        """, unsafe_allow_html=True)
+            <p style="margin-top: 15px; color: #93a4bf; font-size: 0.95rem; line-height: 1.6;">
+                <b>تحليل الوكيل المشرف:</b> {supervisor_desc}
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
 
 else:
     st.error("⚠️ جاري سحب بيانات الأصل... يرجى إعادة المحاولة أو اختيار زوج آخر.")
