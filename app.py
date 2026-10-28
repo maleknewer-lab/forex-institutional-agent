@@ -4,14 +4,12 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 
-# استدعاء محركات النظام والوكلاء
 from smc_engine.order_block_engine import MultiTimeframeSMCEngine
 try:
     from agents.risk_supervisor import RiskSupervisor
 except ImportError:
     RiskSupervisor = None
 
-# إعداد الصفحة وتصميمها
 st.set_page_config(
     page_title="Institutional Multi-Agent Trading System",
     page_icon="🏛️",
@@ -19,7 +17,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 🎨 تنسيقات CSS للمستطيلات المتتالية (Sequential Cards Layout)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap');
@@ -48,7 +45,6 @@ st.markdown("""
         font-size: 1.05rem;
     }
     
-    /* تصميم المستطيلات المتتالية */
     .card-section {
         background: #141f33;
         border: 1px solid #243452;
@@ -67,7 +63,6 @@ st.markdown("""
         gap: 10px;
     }
     
-    /* شريط التوافق */
     .gauge-bar {
         height: 12px;
         border-radius: 99px;
@@ -107,7 +102,7 @@ st.markdown("""
     
     .metric-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 15px;
     }
     .metric-box {
@@ -117,11 +112,10 @@ st.markdown("""
         border: 1px solid #243452;
     }
     .metric-label { font-size: 0.85rem; color: #93a4bf; }
-    .metric-val { font-size: 1.2rem; font-weight: 700; color: #e8eef9; margin-top: 4px; }
+    .metric-val { font-size: 1.15rem; font-weight: 700; color: #e8eef9; margin-top: 4px; }
     </style>
 """, unsafe_allow_html=True)
 
-# قائمة الأصول
 fleet_assets = {
     "EURUSD=X": ("EUR/USD", "FX:EURUSD"),
     "GBPUSD=X": ("GBP/USD", "FX:GBPUSD"),
@@ -141,13 +135,12 @@ fleet_assets = {
     "SI=F": ("الفضة (Silver)", "OANDA:XAGUSD")
 }
 
-# ترويسة الصفحة وقائمة الاختيار
 st.markdown('<div class="hero-container">', unsafe_allow_html=True)
 col_title, col_picker = st.columns([2, 1])
 
 with col_title:
     st.markdown('<div class="hero-title">🏛️ Institutional Multi-Agent Trading & SMC Terminal</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-sub">منصة التداول المؤسسي — نظام المستطيلات المتتالية وتحليل وكيل إدارة المخاطر.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-sub">منصة التداول المؤسسي — تحليل هيكل السوق (BOS / CHOCH) ومناطق السيولة.</div>', unsafe_allow_html=True)
 
 with col_picker:
     selected_symbol = st.selectbox(
@@ -161,7 +154,6 @@ st.markdown("---")
 
 display_name, tv_symbol = fleet_assets[selected_symbol]
 
-# سحب البيانات والتحليل
 @st.cache_data(ttl=300)
 def fetch_analysis_data(symbol):
     try:
@@ -185,9 +177,9 @@ analysis, df_daily = fetch_analysis_data(selected_symbol)
 if analysis is not None:
     daily_bias = analysis.get("daily_trend", "محايد")
     dist_pips = analysis.get("distance_to_ob_pips", 0)
+    market_structure = analysis.get("market_structure", "Range")
     is_noise = analysis.get("is_noise_detected", False)
     
-    # حساب تقييم المؤشر
     if "صاعد" in daily_bias or "Bullish" in daily_bias:
         score_pct = 85 if dist_pips < 20 else 70
         badge_text = "شراء قوي" if score_pct >= 80 else "شراء"
@@ -201,9 +193,7 @@ if analysis is not None:
         badge_text = "محايد"
         badge_class = "bg-neutral"
 
-    # ==========================================
-    # المستطيل الأول: المؤشر المؤسسي الحالي
-    # ==========================================
+    # المستطيل الأول: المؤشر المؤسسي
     st.markdown(f"""
         <div class="card-section">
             <div class="card-title">📊 1. التقييم المؤسسي الشامل للإشارة</div>
@@ -227,33 +217,29 @@ if analysis is not None:
         </div>
     """, unsafe_allow_html=True)
 
-    # ==========================================
-    # المستطيل الثاني: مناطق الـ Order Block (SMC)
-    # ==========================================
+    # المستطيل الثاني: Order Blocks وتحليل هيكل السوق (BOS / CHOCH)
     ob_min, ob_max = analysis['order_block_zone']
     st.markdown(f"""
         <div class="card-section">
-            <div class="card-title">📦 2. مناطق الـ Order Blocks والسيولة المؤسسية</div>
+            <div class="card-title">📦 2. مناطق الـ Order Blocks وهيكل السوق (SMC Structure)</div>
             <div class="metric-grid">
                 <div class="metric-box">
                     <div class="metric-label">نطاق الـ OB (إطار 4 ساعات)</div>
                     <div class="metric-val" style="color:#2dd4a0;">{ob_min} - {ob_max}</div>
                 </div>
                 <div class="metric-box">
-                    <div class="metric-label">المسافة الحالية عن السعر</div>
-                    <div class="metric-val">{dist_pips} نقطة</div>
+                    <div class="metric-label">حالة هيكل السوق (Structure)</div>
+                    <div class="metric-val" style="color:#f0b84a; font-size:1.0rem;">{market_structure}</div>
                 </div>
                 <div class="metric-box">
-                    <div class="metric-label">طبيعة المنطقة</div>
-                    <div class="metric-val" style="color:#f0b84a;">تجميع سيولة إعادة اختبار</div>
+                    <div class="metric-label">المسافة الحالية عن السعر</div>
+                    <div class="metric-val">{dist_pips} نقطة</div>
                 </div>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-    # ==========================================
-    # المستطيل الثالث: شارت التداول اللحظي (TradingView)
-    # ==========================================
+    # المستطيل الثالث: شارت TradingView
     st.markdown(f"""
         <div class="card-section">
             <div class="card-title">📈 3. الرسم البياني المباشر واللحظي ({display_name})</div>
@@ -263,12 +249,9 @@ if analysis is not None:
     tv_embed_url = f"https://s.tradingview.com/widgetembed/?symbol={tv_symbol}&interval=240&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=dark&style=1&timezone=Etc/UTC&locale=ar"
     st.iframe(tv_embed_url, height=520)
 
-    # ==========================================
-    # المستطيل الرابع: تحليل وكيل المخاطر المشرف (Risk Supervisor & Noise)
-    # ==========================================
+    # المستطيل الرابع: تقييم وكيل المخاطر
     supervisor_status = "⚠️ تحذير: رصد تعارض تقاطعي وضوضاء عالية" if is_noise else "✅ استقرار تقاطعي: لا توجد تعارضات جوهرية"
     supervisor_color = "#ff6b73" if is_noise else "#2dd4a0"
-    supervisor_desc = "يقوم وكيل المخاطر بمقارنة هذا الزوج مع أزواج العملات المتقاطعة (مثل ارتباطات الدولار). في حال وجود إشارات متعارضة (مثل بيع قوي على زوج وشراء على آخر بنفس العملة الأساسية)، يتم تصنيف السوق على أنه 'ضوضاء' لحماية رأس المال." if is_noise else "المسار الاتجاهي متوافق مع منظومة السيولة الكلية، ولا توجد تعارضات مع العملات المرتبطة."
 
     st.markdown(f"""
         <div class="card-section" style="border: 1px solid {supervisor_color};">
@@ -287,9 +270,6 @@ if analysis is not None:
                     <div class="metric-val" style="color:#f0b84a;">{'تجنب الدخول (فلتر حماية)' if is_noise else 'مسموح بالتنفيذ المؤسسي'}</div>
                 </div>
             </div>
-            <p style="margin-top: 15px; color: #93a4bf; font-size: 0.95rem; line-height: 1.6;">
-                <b>تحليل الوكيل المشرف:</b> {supervisor_desc}
-            </p>
         </div>
     """, unsafe_allow_html=True)
 
