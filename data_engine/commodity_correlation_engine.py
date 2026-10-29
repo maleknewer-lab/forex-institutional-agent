@@ -3,21 +3,31 @@ import pandas as pd
 
 class CommodityCorrelationEngine:
     def __init__(self):
-        # تصنيف حساسية العملات للنفط والذهب
+        # تصنيف حساسية العملات للنفط (إيجابي، سلبي، محايد)
         self.oil_sensitivity = {
-            "CAD": "positive",  # إيجابي بارتفاع النفط
-            "NOK": "positive",
-            "RUB": "positive",
-            "EUR": "negative",  # سلبي (مستورد للطاقة)
-            "JPY": "negative",  # سلبي (مستورد للطاقة)
-            "GBP": "neutral",
-            "AUD": "positive"   # ارتباط سلعي عام
+            "CAD": 1.0,   # مرتبط ارتباطاً وثيقاً بأسعار النفط
+            "NOK": 1.0,
+            "RUB": 0.8,
+            "AUD": 0.5,   # سلعة عامة وترابط تجاري
+            "EUR": -0.5,  # مستورد للطاقة
+            "JPY": -0.7,  # مستورد صافي للطاقة
+            "GBP": 0.0,   # محايد نسبيًا
+            "USD": -0.2   # علاقة عكسية طفيفة غالباً مع تسعير السلع بالدولار
         }
         
+        # حساسية العملات للذهب (كملاذ آمن أو ارتباط إنتاج)
+        self.gold_sensitivity = {
+            "AUD": 0.7,   # منتجون رئيسيون للذهب
+            "CAD": 0.3,
+            "EUR": 0.4,   # الذهب كبديل أحياناً للعملات في الأزمات
+            "JPY": 0.5,   # الذهب ملاذ آمن مثل الين
+            "GBP": 0.1,
+            "USD": -0.5,  # علاقة عكسية قوية بين الذهب والدولار الأمريكي
+            "CHF": 0.4    # ملاذ آمن
+        }
+
     def _get_commodity_trends(self):
-        """
-        جلب اتجاهات النفط والذهب الحية عبر yfinance
-        """
+        """ جلب اتجاهات النفط والذهب الحية عبر yfinance """
         try:
             oil = yf.download("CL=F", period="1mo", progress=False)
             gold = yf.download("GC=F", period="1mo", progress=False)
@@ -41,40 +51,52 @@ class CommodityCorrelationEngine:
                 "gold_trend": "صاعد (Bullish)" if gold_change > 0 else "هابط (Bearish)",
                 "gold_change_pct": round(gold_change, 2)
             }
-        except:
-            return {"oil_trend": "مستقر", "oil_change_pct": 0.0, "gold_trend": "مستقر", "gold_change_pct": 0.0}
+        except Exception as e:
+            return {
+                "oil_trend": "مستقر", "oil_change_pct": 0.0,
+                "gold_trend": "مستقر", "gold_change_pct": 0.0
+            }
 
     def analyze_commodity_impact(self, currency_pair: str) -> dict:
+        """ 
+        تحليل تأثير النفط والذهب على الزوج المحدد (Base/Quote)
+        وإرجاع درجة تأثير مئوية ورقمية (-1 إلى +1) لتغذية نماذج الذكاء الاصطناعي.
         """
-        تحليل تأثير النفط والذهب على الزوج المحدد
-        """
-        base, quote = currency_pair.split('/')
-        comm_data = self._get_commodity_trends()
+        try:
+            base, quote = currency_pair.split('/')
+        except:
+            if "CAD" in currency_pair:
+                base, quote = "USD", "CAD"
+            elif "EUR" in currency_pair:
+                base, quote = "EUR", "USD"
+            else:
+                base, quote = "GBP", "USD"
+
+        trends = self._get_commodity_trends()
         
-        oil_pct = comm_data["oil_change_pct"]
-        gold_pct = comm_data["gold_change_pct"]
+        oil_chg = trends["oil_change_pct"]
+        gold_chg = trends["gold_change_pct"]
         
-        base_oil_sens = self.oil_sensitivity.get(base, "neutral")
-        quote_oil_sens = self.oil_sensitivity.get(quote, "neutral")
+        base_oil_sens = self.oil_sensitivity.get(base, 0.0)
+        quote_oil_sens = self.oil_sensitivity.get(quote, 0.0)
         
-        # حساب التقييم الاستراتيجي بناءً على حركة النفط والعملة
-        impact_score = 0.0
-        description = f"النفط يتغير بنسبة {oil_pct}% | الذهب يتغير بنسبة {gold_pct}%."
+        base_gold_sens = self.gold_sensitivity.get(base, 0.0)
+        quote_gold_sens = self.gold_sensitivity.get(quote, 0.0)
         
-        if base_oil_sens == "positive" and oil_pct > 0:
-            impact_score += 0.5
-            description += f" صعود النفط يدعم عملة الأساس ({base}) بقوة."
-        elif base_oil_sens == "negative" and oil_pct > 0:
-            impact_score -= 0.5
-            description += f" صعود النفط يضغط سلباً على عملة الأساس ({base})."
-            
-        if "XAU" in base:
-            if gold_pct > 0:
-                impact_score += 0.8
-                description += f" صعود الذهب يدعم الأصول المقومة به."
+        oil_impact = (oil_chg * (base_oil_sens - quote_oil_sens)) / 100.0
+        gold_impact = (gold_chg * (base_gold_sens - quote_gold_sens)) / 100.0
+        
+        total_commodity_score = round(max(min(oil_impact + gold_impact, 1.0), -1.0), 2)
+        
+        bias = "محايد"
+        if total_commodity_score > 0.2:
+            bias = "دعم سلعي لصعود الزوج (Bullish Commodity Impact)"
+        elif total_commodity_score < -0.2:
+            bias = "ضغط سلعي لهبوط الزوج (Bearish Commodity Impact)"
 
         return {
-            "commodities": comm_data,
-            "impact_score": impact_score,
-            "description": description
+            "pair": currency_pair,
+            "trends": trends,
+            "commodity_score": total_commodity_score,
+            "commodity_bias": bias
         }
